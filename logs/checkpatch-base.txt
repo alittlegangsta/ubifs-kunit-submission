@@ -1,0 +1,25 @@
+Checker revision: 734bef548a96e8774d6eef5dfa2026c6edc4e80b
+Original exit code: 1
+Only the local absolute patch path has been made relative; no diagnostics removed.
+
+WARNING:BAD_SIGN_OFF: Non-standard signature: Assisted-by:
+#35: 
+Assisted-by: LLM
+
+ERROR:BAD_SIGN_OFF: Unrecognized email address: 'LLM'
+#35: 
+Assisted-by: LLM
+
+WARNING:FILE_PATH_CHANGES: added, moved or deleted file(s), does MAINTAINERS need updating?
+#76: 
+new file mode 100644
+
+total: 1 errors, 2 warnings, 217 lines checked
+
+NOTE: For some of the reported defects, checkpatch may be able to
+      mechanically convert to the typical style using --fix or --fix-inplace.
+
+patches/0001-ubifs-add-KUnit-coverage-for-node-scanning.patch has style problems, please review.
+
+NOTE: If any of the errors are false positives, please report
+      them to the maintainer, see CHECKPATCH in MAINTAINERS.

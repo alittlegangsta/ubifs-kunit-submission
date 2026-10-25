@@ -1,0 +1,281 @@
+From f39a9d9ad451a583f6d1fbedd3b669cd82c57324 Mon Sep 17 00:00:00 2001
+From: kira <1441958714@qq.com>
+Date: Sat, 24 Oct 2026 00:41:20 +0800
+Subject: [PATCH] ubifs: add KUnit coverage for node scanning
+
+Changes to node classification and validation need fast regression
+feedback without setting up a flash image or a UBI device. Add a KUnit
+suite that calls ubifs_scan_a_node() with in-memory inputs and a minimal,
+per-test UBIFS context.
+
+Cover erased space, invalid magic, aligned and unaligned padding bytes,
+a short common header, a valid commit-start node, a bad CRC, and an
+unaligned padding node. Check valid nodes before introducing CRC or
+padding errors so malformed fixtures do not hide the intended paths.
+Also check the CRC error counter.
+
+Link the tests into the existing UBIFS object under UBIFS_KUNIT_TEST,
+requiring both KUnit and UBIFS to be built-in. Use KUnit-managed memory
+and leave production code unchanged. No flash hardware, UBI attachment,
+or filesystem mount is required.
+
+All eight cases passed repeated x86_64 QEMU TCG runs, including a fresh
+build and a separate Generic KASAN build. Isolated mutations of erased
+space classification and CRC checking each failed the intended case;
+restoring each mutation returned all eight cases to PASS. A build with
+KUnit disabled also linked successfully without the test object.
+
+Coverage is limited to these scanner paths. It does not validate all
+node types and length boundaries, mounting, recovery, module execution,
+or flash I/O.
+
+Developed with Codex (LLM) assistance for implementation, review,
+validation, and this commit message.
+
+Assisted-by: LLM
+Signed-off-by: kira <1441958714@qq.com>
+---
+ fs/ubifs/Kconfig     |  13 +++
+ fs/ubifs/Makefile    |   1 +
+ fs/ubifs/scan_test.c | 196 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 210 insertions(+)
+ create mode 100644 fs/ubifs/scan_test.c
+
+diff --git a/fs/ubifs/Kconfig b/fs/ubifs/Kconfig
+index 45d3d207f..f75565130 100644
+--- a/fs/ubifs/Kconfig
++++ b/fs/ubifs/Kconfig
+@@ -98,4 +98,17 @@ config UBIFS_FS_AUTHENTICATION
+ 	  sha256, these are not selected automatically since there are many
+ 	  different options.
+ 
++config UBIFS_KUNIT_TEST
++	bool "KUnit tests for UBIFS" if !KUNIT_ALL_TESTS
++	depends on KUNIT=y && UBIFS_FS=y
++	default KUNIT_ALL_TESTS
++	help
++	  Build the UBIFS KUnit tests into the kernel. These tests exercise
++	  UBIFS functions using in-memory inputs and do not require a UBI
++	  device or flash hardware. Both UBIFS and KUnit must be built-in.
++
++	  For more information, see Documentation/dev-tools/kunit/.
++
++	  If unsure, say N.
++
+ endif # UBIFS_FS
+diff --git a/fs/ubifs/Makefile b/fs/ubifs/Makefile
+index 314c80b24..582126f7b 100644
+--- a/fs/ubifs/Makefile
++++ b/fs/ubifs/Makefile
+@@ -9,3 +9,4 @@ ubifs-y += misc.o sysfs.o
+ ubifs-$(CONFIG_FS_ENCRYPTION) += crypto.o
+ ubifs-$(CONFIG_UBIFS_FS_XATTR) += xattr.o
+ ubifs-$(CONFIG_UBIFS_FS_AUTHENTICATION) += auth.o
++ubifs-$(CONFIG_UBIFS_KUNIT_TEST) += scan_test.o
+diff --git a/fs/ubifs/scan_test.c b/fs/ubifs/scan_test.c
+new file mode 100644
+index 000000000..1226cac98
+--- /dev/null
++++ b/fs/ubifs/scan_test.c
+@@ -0,0 +1,196 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/* KUnit tests for UBIFS node scanning. */
++
++#include <kunit/test.h>
++#include <linux/align.h>
++#include <linux/crc32.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/string.h>
++
++#include "ubifs.h"
++
++static int ubifs_scan_test_init(struct kunit *test)
++{
++	struct ubifs_info *c;
++
++	c = kunit_kzalloc(test, sizeof(*c), GFP_KERNEL);
++	if (!c)
++		return -ENOMEM;
++
++	c->leb_cnt = 1;
++	c->leb_size = UBIFS_MIN_LEB_SZ;
++	c->ranges[UBIFS_CS_NODE].len = UBIFS_CS_NODE_SZ;
++	c->ranges[UBIFS_PAD_NODE].len = UBIFS_PAD_NODE_SZ;
++
++	test->priv = c;
++	return 0;
++}
++
++/* Call after filling the payload so the CRC covers the final node bytes. */
++static void ubifs_test_prepare_node(struct ubifs_ch *ch, int len, int type)
++{
++	u32 crc;
++
++	ch->magic = cpu_to_le32(UBIFS_NODE_MAGIC);
++	ch->len = cpu_to_le32(len);
++	ch->node_type = type;
++	ch->group_type = UBIFS_NO_NODE_GROUP;
++	ch->sqnum = cpu_to_le64(1);
++
++	/* The first eight bytes (magic and CRC) are not covered by the CRC. */
++	crc = crc32(UBIFS_CRC32_INIT, (u8 *)ch + 8, len - 8);
++	ch->crc = cpu_to_le32(crc);
++}
++
++static void ubifs_scan_empty_space_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	void *buf;
++	int ret;
++
++	buf = kunit_kmalloc(test, UBIFS_CH_SZ, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, buf);
++	memset(buf, 0xff, UBIFS_CH_SZ);
++
++	/* Empty space is recognized before any UBIFS context is inspected. */
++	ret = ubifs_scan_a_node(c, buf, UBIFS_CH_SZ, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_EMPTY_SPACE);
++}
++
++static void ubifs_scan_bad_magic_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	struct ubifs_ch *ch;
++	int ret;
++
++	ch = kunit_kzalloc(test, UBIFS_CH_SZ, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, ch);
++	ch->magic = cpu_to_le32(UBIFS_NODE_MAGIC ^ 1);
++
++	ret = ubifs_scan_a_node(c, ch, UBIFS_CH_SZ, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_GARBAGE);
++}
++
++static void ubifs_scan_padding_bytes_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	u8 *buf;
++	int ret;
++
++	buf = kunit_kzalloc(test, 16, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, buf);
++	memset(buf, UBIFS_PADDING_BYTE, 8);
++
++	ret = ubifs_scan_a_node(c, buf, 16, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, 8);
++}
++
++static void ubifs_scan_bad_padding_bytes_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	u8 *buf;
++	int ret;
++
++	buf = kunit_kzalloc(test, 16, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, buf);
++	memset(buf, UBIFS_PADDING_BYTE, 7);
++
++	ret = ubifs_scan_a_node(c, buf, 16, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_GARBAGE);
++}
++
++static void ubifs_scan_short_header_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	__le32 *buf;
++	int ret;
++
++	/* The scanner reads magic before checking for a complete header. */
++	buf = kunit_kzalloc(test, 8, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, buf);
++	*buf = cpu_to_le32(UBIFS_NODE_MAGIC);
++
++	ret = ubifs_scan_a_node(c, buf, 8, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_GARBAGE);
++}
++
++static void ubifs_scan_valid_node_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	struct ubifs_cs_node *cs;
++	int ret;
++
++	cs = kunit_kzalloc(test, UBIFS_CS_NODE_SZ, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, cs);
++	cs->cmt_no = cpu_to_le64(1);
++	ubifs_test_prepare_node(&cs->ch, UBIFS_CS_NODE_SZ, UBIFS_CS_NODE);
++
++	ret = ubifs_scan_a_node(c, cs, UBIFS_CS_NODE_SZ, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_A_NODE);
++}
++
++static void ubifs_scan_bad_crc_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	struct ubifs_cs_node *cs;
++	int ret;
++
++	c->stats = kunit_kzalloc(test, sizeof(*c->stats), GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, c->stats);
++	cs = kunit_kzalloc(test, UBIFS_CS_NODE_SZ, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, cs);
++	cs->cmt_no = cpu_to_le64(1);
++	ubifs_test_prepare_node(&cs->ch, UBIFS_CS_NODE_SZ, UBIFS_CS_NODE);
++
++	/* Rule out malformed context or node fields before corrupting the CRC. */
++	ret = ubifs_scan_a_node(c, cs, UBIFS_CS_NODE_SZ, 0, 0, 1);
++	KUNIT_ASSERT_EQ(test, ret, SCANNED_A_NODE);
++
++	cs->ch.crc ^= cpu_to_le32(1);
++	ret = ubifs_scan_a_node(c, cs, UBIFS_CS_NODE_SZ, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_A_CORRUPT_NODE);
++	KUNIT_EXPECT_EQ(test, c->stats->crc_errors, 1U);
++}
++
++static void ubifs_scan_bad_padding_node_test(struct kunit *test)
++{
++	struct ubifs_info *c = test->priv;
++	const int len = ALIGN(UBIFS_PAD_NODE_SZ, 8);
++	struct ubifs_pad_node *pad;
++	int ret;
++
++	pad = kunit_kzalloc(test, len, GFP_KERNEL);
++	KUNIT_ASSERT_NOT_NULL(test, pad);
++	pad->pad_len = cpu_to_le32(len - UBIFS_PAD_NODE_SZ);
++	ubifs_test_prepare_node(&pad->ch, UBIFS_PAD_NODE_SZ, UBIFS_PAD_NODE);
++
++	ret = ubifs_scan_a_node(c, pad, len, 0, 0, 1);
++	KUNIT_ASSERT_EQ(test, ret, len);
++
++	/* Keep the CRC valid while making the total padding length unaligned. */
++	pad->pad_len = cpu_to_le32(0);
++	ubifs_test_prepare_node(&pad->ch, UBIFS_PAD_NODE_SZ, UBIFS_PAD_NODE);
++	ret = ubifs_scan_a_node(c, pad, len, 0, 0, 1);
++	KUNIT_EXPECT_EQ(test, ret, SCANNED_A_BAD_PAD_NODE);
++}
++
++static struct kunit_case ubifs_scan_test_cases[] = {
++	KUNIT_CASE(ubifs_scan_empty_space_test),
++	KUNIT_CASE(ubifs_scan_bad_magic_test),
++	KUNIT_CASE(ubifs_scan_padding_bytes_test),
++	KUNIT_CASE(ubifs_scan_bad_padding_bytes_test),
++	KUNIT_CASE(ubifs_scan_short_header_test),
++	KUNIT_CASE(ubifs_scan_valid_node_test),
++	KUNIT_CASE(ubifs_scan_bad_crc_test),
++	KUNIT_CASE(ubifs_scan_bad_padding_node_test),
++	{}
++};
++
++static struct kunit_suite ubifs_scan_test_suite = {
++	.name = "ubifs-scan",
++	.init = ubifs_scan_test_init,
++	.test_cases = ubifs_scan_test_cases,
++};
++
++kunit_test_suite(ubifs_scan_test_suite);
+
+base-commit: 734bef548a96e8774d6eef5dfa2026c6edc4e80b
+-- 
+2.43.0
+

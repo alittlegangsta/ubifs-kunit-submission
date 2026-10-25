@@ -1,0 +1,159 @@
+{
+  "base": "734bef548a96e8774d6eef5dfa2026c6edc4e80b",
+  "original_commit": "f39a9d9ad451a583f6d1fbedd3b669cd82c57324",
+  "applied_commit": "5ffe8d4a0c228fcf81df2038c8e75b6d0d1402fa",
+  "tree": "35767453ea08c237d07d3563beb6c510f699a03e",
+  "identical_tree": true,
+  "identical_message_author": true,
+  "both_worktrees_clean": true,
+  "files": [
+    "fs/ubifs/Kconfig",
+    "fs/ubifs/Makefile",
+    "fs/ubifs/scan_test.c"
+  ],
+  "kernel_release": "7.3.0-g5ffe8d4a0c22",
+  "runs": [
+    {
+      "run": "first",
+      "fresh_build": true,
+      "exit_code": 0,
+      "elapsed_seconds": 50.86,
+      "counts": {
+        "tests": 8,
+        "passed": 8,
+        "failed": 0,
+        "crashed": 0,
+        "skipped": 0,
+        "errors": 0
+      },
+      "case_results": [
+        {
+          "name": "ubifs_scan_empty_space_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_magic_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_padding_bytes_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_padding_bytes_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_short_header_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_valid_node_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_crc_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_padding_node_test",
+          "status": "PASS"
+        }
+      ],
+      "raw_console_sha256": "3901e316bc9db8b2abb687c4365ca525963f9f7f953751bf6d96e7d65c10bf75",
+      "ktap_excerpt_sha256": "f051e8031cf2f9e06836908bf593ac837ab59f0400e2bcecabc4d2f564834100"
+    },
+    {
+      "run": "repeat",
+      "fresh_build": false,
+      "exit_code": 0,
+      "elapsed_seconds": 3.534,
+      "counts": {
+        "tests": 8,
+        "passed": 8,
+        "failed": 0,
+        "crashed": 0,
+        "skipped": 0,
+        "errors": 0
+      },
+      "case_results": [
+        {
+          "name": "ubifs_scan_empty_space_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_magic_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_padding_bytes_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_padding_bytes_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_short_header_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_valid_node_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_crc_test",
+          "status": "PASS"
+        },
+        {
+          "name": "ubifs_scan_bad_padding_node_test",
+          "status": "PASS"
+        }
+      ],
+      "raw_console_sha256": "d2e63419180f4036f7222654c9216cf07e23ee359cb04015c28e1f5bb090bd3d",
+      "ktap_excerpt_sha256": "f051e8031cf2f9e06836908bf593ac837ab59f0400e2bcecabc4d2f564834100"
+    }
+  ],
+  "full_patch_checkpatch": {
+    "exit_code": 1,
+    "errors": 1,
+    "warnings": 2,
+    "types": [
+      "BAD_SIGN_OFF",
+      "FILE_PATH_CHANGES"
+    ],
+    "status": "Base-version diagnostic retained and explained by later removal of Assisted-by support; original signed commit preserved at author request."
+  },
+  "source_diff_checkpatch": {
+    "exit_code": 1,
+    "errors": 0,
+    "warnings": 1,
+    "types": [
+      "FILE_PATH_CHANGES"
+    ]
+  },
+  "committed_diff_whitespace": {
+    "exit_code": 0
+  },
+  "config_sha256": "318d0351d90bd28be7cdc3505e31ac5adcb6e95f53dd1f68f75281e8476c9190",
+  "publication": "Not published",
+  "format_compatible_checkpatch": {
+    "label": "format-compatible",
+    "revision": "2a8d68338ee77e200895f2697c56fd00094767f7",
+    "script_sha256": "14218b275dcb60e3e43845dec8e5511973e2bce39bae9c736283b67b466e9a0c",
+    "errors": 0,
+    "warnings": 1,
+    "lines_checked": 217,
+    "exit_code": 1,
+    "log": "logs/checkpatch-compatible.txt",
+    "raw_log_sha256": "7d8b1af5adb073c5a85abea53c9a7df9ca407106f4f0a621c613db8544fb899a",
+    "options": [
+      "--root=<unchanged Linux checkout>",
+      "--show-types"
+    ],
+    "environment_note": "Empty CHECKPATCH_CONFIG_DIR/.checkpatch.conf; existing SPDX dependencies supplied through PYTHONPATH. Spelling and const-struct data fetched from the same tool revision."
+  },
+  "tool_comparison": "tool-compatibility.json",
+  "delivery_status": "Local interview delivery complete with disclosed checker-version differences; publication not performed.",
+  "evidence_refresh_note": "Existing git am and two 8/8 KUnit runs re-audited against unchanged sources and config. KUnit was not rerun during tool compatibility review."
+}

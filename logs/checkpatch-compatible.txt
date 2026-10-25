@@ -1,0 +1,17 @@
+Checker revision: 2a8d68338ee77e200895f2697c56fd00094767f7
+Original exit code: 1
+Only the local absolute patch path has been made relative; no diagnostics removed.
+
+WARNING:FILE_PATH_CHANGES: added, moved or deleted file(s), does MAINTAINERS need updating?
+#76: 
+new file mode 100644
+
+total: 0 errors, 1 warnings, 217 lines checked
+
+NOTE: For some of the reported defects, checkpatch may be able to
+      mechanically convert to the typical style using --fix or --fix-inplace.
+
+patches/0001-ubifs-add-KUnit-coverage-for-node-scanning.patch has style problems, please review.
+
+NOTE: If any of the errors are false positives, please report
+      them to the maintainer, see CHECKPATCH in MAINTAINERS.

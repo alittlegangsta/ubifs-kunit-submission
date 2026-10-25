@@ -1,0 +1,17 @@
+KTAP version 1
+1..1
+    KTAP version 1
+    # Subtest: ubifs-scan
+    # module: ubifs
+    1..8
+    ok 1 ubifs_scan_empty_space_test
+    ok 2 ubifs_scan_bad_magic_test
+    ok 3 ubifs_scan_padding_bytes_test
+    ok 4 ubifs_scan_bad_padding_bytes_test
+    ok 5 ubifs_scan_short_header_test
+    ok 6 ubifs_scan_valid_node_test
+    ok 7 ubifs_scan_bad_crc_test
+    ok 8 ubifs_scan_bad_padding_node_test
+# ubifs-scan: pass:8 fail:0 skip:0 total:8
+# Totals: pass:8 fail:0 skip:0 total:8
+ok 1 ubifs-scan

@@ -1,0 +1,55 @@
+{
+  "checked_date": "2026-10-24",
+  "patch_sha256": "08785ea5e8801a513d2bd1f1eeaa5b75df2dd2256d5bb489d9f4b6aff7e20711",
+  "fix_commit": "2a8d68338ee77e200895f2697c56fd00094767f7",
+  "fix_committer_date_utc": "2026-08-05T18:53:21Z",
+  "later_removal_commit": "1e035297ffdadf2184c3c773b8c098e372324aaf",
+  "removal_committer_date_utc": "2026-10-14T16:51:49Z",
+  "base": "734bef548a96e8774d6eef5dfa2026c6edc4e80b",
+  "chronology_note": "The Base checker is later than the August fix; October removed tag support. The August checker is a format-compatible historical version, not a newer replacement for Base.",
+  "official_removal_equals_base_checker": true,
+  "empty_configuration_bytes": 0,
+  "suppression_flags_used": false,
+  "source_commit_changed": false,
+  "patch_changed": false,
+  "checks": [
+    {
+      "label": "base",
+      "revision": "734bef548a96e8774d6eef5dfa2026c6edc4e80b",
+      "script_sha256": "71a116671b369b3a0b8724c25560a2c176ae1adabfd90bf5e7304fe67f31c926",
+      "errors": 1,
+      "warnings": 2,
+      "lines_checked": 217,
+      "exit_code": 1,
+      "log": "logs/checkpatch-base.txt",
+      "raw_log_sha256": "baeff5415a10cd1f85b49810db4583ffe4a5a0fb9e950081ab4ba4d40d138eab",
+      "options": [
+        "--root=<unchanged Linux checkout>",
+        "--show-types"
+      ],
+      "environment_note": "Empty CHECKPATCH_CONFIG_DIR/.checkpatch.conf; existing SPDX dependencies supplied through PYTHONPATH. Spelling and const-struct data fetched from the same tool revision."
+    },
+    {
+      "label": "format-compatible",
+      "revision": "2a8d68338ee77e200895f2697c56fd00094767f7",
+      "script_sha256": "14218b275dcb60e3e43845dec8e5511973e2bce39bae9c736283b67b466e9a0c",
+      "errors": 0,
+      "warnings": 1,
+      "lines_checked": 217,
+      "exit_code": 1,
+      "log": "logs/checkpatch-compatible.txt",
+      "raw_log_sha256": "7d8b1af5adb073c5a85abea53c9a7df9ca407106f4f0a621c613db8544fb899a",
+      "options": [
+        "--root=<unchanged Linux checkout>",
+        "--show-types"
+      ],
+      "environment_note": "Empty CHECKPATCH_CONFIG_DIR/.checkpatch.conf; existing SPDX dependencies supplied through PYTHONPATH. Spelling and const-struct data fetched from the same tool revision."
+    }
+  ],
+  "maintainers_explanation": "MAINTAINERS line 28137: F: fs/ubifs/ covers fs/ubifs/scan_test.c. The warning is retained; no extra entry is needed.",
+  "sources": {
+    "fix": "https://github.com/torvalds/linux/commit/2a8d68338ee77e200895f2697c56fd00094767f7",
+    "removal": "https://github.com/torvalds/linux/commit/1e035297ffdadf2184c3c773b8c098e372324aaf",
+    "online_ai_guidance": "https://docs.kernel.org/process/coding-assistants.html"
+  }
+}
