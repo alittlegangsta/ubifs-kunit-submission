@@ -4,7 +4,8 @@
 
 Provide small, repeatable unit tests for the real Linux UBIFS node scanner, without a development board or flash device. The suite exercises `ubifs_scan_a_node()` using in-memory inputs and the kernel's own KUnit framework.
 
-**Delivery status:** the local interview package is complete. Patch application, source-tree equivalence, a fresh build and two complete test runs passed. A format-compatible official checkpatch revision reports 0 errors and one explained MAINTAINERS warning. The pinned Base checker still reports its different message-format diagnostics; both complete results are included. The signed commit and patch remain unchanged. Nothing has been published to GitHub or submitted upstream.
+**Delivery status:** the local interview package is complete. Patch application, source-tree equivalence, a fresh build and two complete test runs passed. A format-compatible official checkpatch revision reports 0 errors and one explained MAINTAINERS warning. The pinned Base checker still reports its different message-format diagnostics; both complete results are included. The signed commit and patch remain unchanged. This interview package has been published to this GitHub
+repository but has not been submitted upstream.
 
 ## Linux Base Commit
 
@@ -134,4 +135,5 @@ After the eight tests and quality checks were complete, the project compared the
 sha256sum --check SHA256SUMS
 ```
 
-Only this package's contents are intended for an interview repository. Do not upload the full Linux checkout, build outputs, private project records or the temporary checker download directory. GitHub publication is a separate, unperformed step.
+Only this package's contents are intended for an interview repository. Do not upload the full Linux checkout, build outputs, private project records or the temporary checker download directory. This package is publicly available in this GitHub repository.
+It has not been submitted to the Linux upstream project.
